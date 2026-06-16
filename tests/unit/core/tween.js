@@ -253,4 +253,71 @@
     Crafty.timer.simulateFrames(10 + 2);
     _.notOk(fired, "TweenEnd shouldn't have fired.");
   });
+
+  test("cancelTween removes tween from tweens array", function(_) {
+    var e = Crafty.e("2D, Tween")
+      .tween({ x: 100 }, 200)
+      .tween({ y: 100 }, 200);
+
+    _.strictEqual(e.tweens.length, 2, "Two tweens in array");
+
+    e.cancelTween("x");
+    _.strictEqual(
+      e.tweens.length,
+      1,
+      "One tween removed from array after cancelTween"
+    );
+
+    e.cancelTween("y");
+    _.strictEqual(
+      e.tweens.length,
+      0,
+      "All tweens removed from array after cancelTween"
+    );
+  });
+
+  test("cancelTween stops processing cancelled tween", function(_) {
+    var tickCount = 0;
+    var e = Crafty.e("2D, Tween")
+      .attr({ x: 0, y: 0 })
+      .tween({ x: 100 }, 200)
+      .tween({ y: 100 }, 200);
+
+    // Cancel x tween immediately
+    e.cancelTween("x");
+
+    // Simulate frames - only y should be tweened
+    Crafty.timer.simulateFrames(10);
+
+    // x should remain at start position (not tweened)
+    _.strictEqual(e.x, 0, "x should not be tweened after cancellation");
+    // y should be at end position (fully tweened)
+    _.strictEqual(e.y, 100, "y should be fully tweened");
+  });
+
+  test("_endTween does not fire TweenEnd for empty properties", function(_) {
+    var fired = 0;
+    var e = Crafty.e("2D, Tween")
+      .tween({ x: 100, y: 100 }, 200)
+      .bind("TweenEnd", function(props) {
+        fired++;
+        _.ok(
+          Object.keys(props).length > 0,
+          "TweenEnd should only fire with non-empty properties"
+        );
+      });
+
+    // Cancel all properties
+    e.cancelTween("x");
+    e.cancelTween("y");
+
+    // Simulate frames to trigger _endTween
+    Crafty.timer.simulateFrames(10 + 2);
+
+    _.strictEqual(
+      fired,
+      0,
+      "TweenEnd should not fire when all properties are cancelled"
+    );
+  });
 })();

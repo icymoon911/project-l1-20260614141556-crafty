@@ -163,4 +163,69 @@
 
     _.deepEqual(fox.changed, ["name", "dob"]);
   });
+
+  test("Change events do not recurse into arrays", function(_) {
+    var fox,
+      results = [];
+    Crafty.c("Animal", {
+      name: "Fox",
+      tags: ["fast", "clever"]
+    });
+
+    fox = Crafty.e("Animal, Model");
+
+    fox.bind("Change", function() {
+      results.push("Change");
+    });
+    fox.bind("Change[name]", function() {
+      results.push("Change[name]");
+    });
+    fox.bind("Change[tags]", function() {
+      results.push("Change[tags]");
+    });
+
+    // Update with an array - should trigger Change[tags] but NOT recurse into array elements
+    fox.attr({ tags: ["strong", "brave"] });
+
+    // Should only have Change[tags] and Change, no deep events on array contents
+    _.deepEqual(
+      results,
+      ["Change[tags]", "Change"],
+      "Array values should not trigger recursive Change events"
+    );
+  });
+
+  test("Change events work with plain objects from different contexts", function(_) {
+    var fox,
+      results = [];
+    Crafty.c("Animal", {
+      name: "Fox",
+      contact: {
+        email: "fox@example.com"
+      }
+    });
+
+    fox = Crafty.e("Animal, Model");
+
+    fox.bind("Change[contact.email]", function() {
+      results.push("Change[contact.email]");
+    });
+
+    // Create an object that might have a different constructor (simulating cross-iframe)
+    var newContact = {};
+    newContact.email = "new@example.com";
+
+    fox.attr({ contact: newContact }, false, true);
+
+    _.strictEqual(
+      results.length,
+      1,
+      "Deep change event fired for plain object"
+    );
+    _.strictEqual(
+      results[0],
+      "Change[contact.email]",
+      "Correct deep event fired"
+    );
+  });
 })();

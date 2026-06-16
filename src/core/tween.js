@@ -117,10 +117,25 @@ module.exports = {
      */
     cancelTween: function(target) {
         if (typeof target === "string") {
-            if (typeof this.tweenGroup[target] === "object")
+            if (typeof this.tweenGroup[target] === "object") {
                 delete this.tweenGroup[target][target];
+                delete this.tweenStart[target];
+                delete this.tweenGroup[target];
+            }
         } else if (typeof target === "object") {
             for (var propname in target) this.cancelTween(propname);
+        }
+
+        // Remove tweens with no remaining properties from the tweens array
+        for (var i = this.tweens.length - 1; i >= 0; i--) {
+            var hasProps = false;
+            for (var key in this.tweens[i].props) {
+                hasProps = true;
+                break;
+            }
+            if (!hasProps) {
+                this.tweens.splice(i, 1);
+            }
         }
 
         return this;

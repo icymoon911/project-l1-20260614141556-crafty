@@ -133,6 +133,11 @@ module.exports = {
     enterScene: function(name, data) {
         if (typeof data === "function") throw "Scene data cannot be a function";
 
+        // Validate target scene exists BEFORE destroying current scene
+        if (!this._scenes.hasOwnProperty(name)) {
+            throw 'The scene "' + name + '" does not exist';
+        }
+
         // ---FYI---
         // this._current is the name (ID) of the scene in progress.
         // this._scenes is an object like the following:
@@ -162,11 +167,7 @@ module.exports = {
             newScene: name
         });
 
-        if (this._scenes.hasOwnProperty(name)) {
-            this._scenes[name].initialize.call(this, data);
-        } else {
-            Crafty.error('The scene "' + name + '" does not exist');
-        }
+        this._scenes[name].initialize.call(this, data);
 
         return;
     }

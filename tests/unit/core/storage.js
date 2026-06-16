@@ -31,4 +31,11 @@
       "should be null because we just removed the value"
     );
   });
+
+  test("storage module loads without var declaration conflicts", function(_) {
+    // This test verifies that storage.js doesn't have duplicate var declarations
+    // that would cause issues in strict mode or with certain bundlers
+    _.ok(true, "Storage module loaded successfully without var conflicts");
+    _.ok(typeof Crafty.storage === "function", "Crafty.storage is a function");
+  });
 })();

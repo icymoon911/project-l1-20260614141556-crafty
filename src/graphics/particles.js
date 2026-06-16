@@ -30,6 +30,11 @@ Crafty.c("Particles", {
     init: function() {
         // We need to clone particle handler object to avoid shared object trap
         this._Particles = Crafty.clone(this._Particles);
+        // Deep clone presets to avoid shared nested object references
+        // (gravity, originOffset, colour arrays, etc.) across instances
+        this._Particles.presets = JSON.parse(
+            JSON.stringify(this._Particles.presets)
+        );
         // Add default options
         this._Particles.init();
 

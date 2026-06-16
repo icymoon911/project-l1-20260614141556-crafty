@@ -64,4 +64,59 @@
       "Uninit scene called successfully when chanced to another scene"
     );
   });
+
+  test("enterScene throws error for non-existent scene before destroying entities", function(_) {
+    // Create a 2D entity that should NOT be destroyed
+    var entity = Crafty.e("2D");
+    var entityDestroyed = false;
+    entity.bind("Remove", function() {
+      entityDestroyed = true;
+    });
+
+    // Try to enter a non-existent scene
+    _.throws(
+      function() {
+        Crafty.enterScene("non-existent-scene");
+      },
+      /does not exist/,
+      "enterScene throws error for non-existent scene"
+    );
+
+    // Entity should still exist because scene validation happens before destruction
+    _.strictEqual(
+      entityDestroyed,
+      false,
+      "2D entity should not be destroyed when entering non-existent scene"
+    );
+    _.strictEqual(
+      Crafty("2D").length,
+      1,
+      "2D entity still exists after failed scene transition"
+    );
+  });
+
+  test("enterScene validates scene exists before running uninit", function(_) {
+    var uninitCalled = false;
+    var sceneInit = function() {};
+    var sceneUninit = function() {
+      uninitCalled = true;
+    };
+
+    Crafty.defineScene("test-validate-uninit", sceneInit, sceneUninit);
+    Crafty.enterScene("test-validate-uninit");
+
+    // Try to enter a non-existent scene
+    try {
+      Crafty.enterScene("another-non-existent");
+    } catch (e) {
+      // Expected to throw
+    }
+
+    // uninit should NOT have been called
+    _.strictEqual(
+      uninitCalled,
+      false,
+      "uninit should not be called when target scene doesn't exist"
+    );
+  });
 })();

@@ -54,7 +54,14 @@ module.exports = {
         options = Crafty.extend.call({ pre: "" }, options);
         for (key in data) {
             this.trigger("Change[" + options.pre + key + "]", data[key]);
-            if (data[key].constructor === Object) {
+            // Check if value is a plain object (not array, not null, not primitive)
+            // Use toString for cross-iframe compatibility
+            if (
+                data[key] !== null &&
+                typeof data[key] === "object" &&
+                !Array.isArray(data[key]) &&
+                Object.prototype.toString.call(data[key]) === "[object Object]"
+            ) {
                 this._changed_triggers(data[key], {
                     pre: options.pre + key + "."
                 });
