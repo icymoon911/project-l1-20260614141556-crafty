@@ -64,4 +64,79 @@
       "Uninit scene called successfully when chanced to another scene"
     );
   });
+
+  test("Scene transition - fade options accepted", function(_) {
+    var done = _.async();
+    var sceneRan = false;
+    Crafty.defineScene("test-fade", function() {
+      sceneRan = true;
+    });
+    Crafty.enterScene("test-fade", null, {transition: "fade", duration: 100});
+    _.ok(Crafty._transitionInProgress, "Transition in progress flag set");
+    setTimeout(function() {
+      _.ok(sceneRan, "Scene ran after fade transition");
+      _.ok(!Crafty._transitionInProgress, "Transition in progress flag cleared");
+      done();
+    }, 300);
+  });
+
+  test("Scene transition - slide options accepted", function(_) {
+    var done = _.async();
+    var sceneRan = false;
+    Crafty.defineScene("test-slide", function() {
+      sceneRan = true;
+    });
+    Crafty.enterScene("test-slide", null, {transition: "slide", duration: 100, direction: "left"});
+    _.ok(Crafty._transitionInProgress, "Transition in progress flag set");
+    setTimeout(function() {
+      _.ok(sceneRan, "Scene ran after slide transition");
+      _.ok(!Crafty._transitionInProgress, "Transition in progress flag cleared");
+      done();
+    }, 300);
+  });
+
+  test("Scene transition - queueing on rapid switches", function(_) {
+    var done = _.async();
+    var scenesRan = {a: false, b: false, c: false};
+    Crafty.defineScene("queue-a", function() { scenesRan.a = true; });
+    Crafty.defineScene("queue-b", function() { scenesRan.b = true; });
+    Crafty.defineScene("queue-c", function() { scenesRan.c = true; });
+
+    Crafty.enterScene("queue-a", null, {transition: "fade", duration: 100});
+    Crafty.enterScene("queue-b", null, {transition: "fade", duration: 100});
+    Crafty.enterScene("queue-c", null, {transition: "fade", duration: 100});
+
+    setTimeout(function() {
+      _.ok(scenesRan.a, "First scene in rapid sequence ran");
+      _.ok(!scenesRan.b, "Middle scene was skipped (replaced by latest)");
+      _.ok(scenesRan.c, "Last scene in rapid sequence ran");
+      done();
+    }, 500);
+  });
+
+  test("Scene transition - SceneTransitionComplete event fires", function(_) {
+    var done = _.async();
+    var completed = false;
+    Crafty.defineScene("test-event", function() {});
+    Crafty.one("SceneTransitionComplete", function(data) {
+      completed = true;
+      _.strictEqual(data.scene, "test-event", "Event data contains correct scene name");
+    });
+    Crafty.enterScene("test-event", null, {transition: "fade", duration: 50});
+    setTimeout(function() {
+      _.ok(completed, "SceneTransitionComplete event fired");
+      done();
+    }, 200);
+  });
+
+  test("Scene transition - Persist entities survive", function(_) {
+    var done = _.async();
+    var persistEntity = Crafty.e("2D, Persist");
+    Crafty.defineScene("test-persist-transition", function() {});
+    Crafty.enterScene("test-persist-transition", null, {transition: "fade", duration: 50});
+    setTimeout(function() {
+      _.ok(Crafty("Persist").length >= 1, "Persist entity survived transition");
+      done();
+    }, 200);
+  });
 })();
