@@ -10,6 +10,8 @@ var Crafty = require("../core/core.js");
  * Component to animate the change in 2D properties over time.
  */
 module.exports = {
+    required: "TickableQueue",
+
     /**@
      * #.tweenSpeed
      * @comp Tween
@@ -23,23 +25,24 @@ module.exports = {
     init: function() {
         this.tweenGroup = {};
         this.tweenStart = {};
-        this.tweens = [];
-        this.uniqueBind("UpdateFrame", this._tweenTick);
+        // `tweens` is a public-facing alias for the TickableQueue's _queue
+        this.tweens = this._queue;
     },
 
-    _tweenTick: function(frameData) {
-        var tween, v, i;
-        for (i = this.tweens.length - 1; i >= 0; i--) {
-            tween = this.tweens[i];
-            tween.easing.tick(frameData.dt * this.tweenSpeed);
-            v = tween.easing.value();
-            this._doTween(tween.props, v);
-            if (tween.easing.complete) {
-                this.tweens.splice(i, 1);
-                this._endTween(tween.props);
-            }
-        }
+    // -- TickableQueue hooks --------------------------------------------------
+
+    _processItem: function(tween, frameData) {
+        tween.easing.tick(frameData.dt * this.tweenSpeed);
+        var v = tween.easing.value();
+        this._doTween(tween.props, v);
+        return tween.easing.complete;
     },
+
+    _onItemFinished: function(tween) {
+        this._endTween(tween.props);
+    },
+
+    // -- internal helpers -----------------------------------------------------
 
     _doTween: function(props, v) {
         for (var name in props)
@@ -136,9 +139,7 @@ module.exports = {
      * Pauses all tweens associated with the entity
      */
     pauseTweens: function() {
-        this.tweens.map(function(e) {
-            e.easing.pause();
-        });
+        this._pauseTick();
     },
 
     /**@
@@ -151,9 +152,7 @@ module.exports = {
      * Resumes all paused tweens associated with the entity
      */
     resumeTweens: function() {
-        this.tweens.map(function(e) {
-            e.easing.resume();
-        });
+        this._resumeTick();
     },
 
     /*

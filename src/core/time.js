@@ -8,6 +8,8 @@
  * This syncs with Crafty's internal clock, and so should generally be preferred to using methods such as `setTimeout`.
  */
 module.exports = {
+    required: "TickableQueue",
+
     /**@
      * #.delaySpeed
      * @comp Delay
@@ -19,34 +21,30 @@ module.exports = {
     delaySpeed: 1,
 
     init: function() {
-        this._delays = [];
-        this._delaysPaused = false;
-        this.bind("UpdateFrame", function(frameData) {
-            if (this._delaysPaused) return;
-            var index = this._delays.length;
-            while (--index >= 0) {
-                var item = this._delays[index];
-                if (item === false) {
-                    // remove canceled item from array
-                    this._delays.splice(index, 1);
-                } else {
-                    item.accumulator += frameData.dt * this.delaySpeed;
-                    // The while loop handles the (pathological) case where dt>delay
-                    while (item.accumulator >= item.delay && item.repeat >= 0) {
-                        item.accumulator -= item.delay;
-                        item.repeat--;
-                        item.callback.call(this);
-                    }
-                    // remove finished item from array
-                    if (item.repeat < 0) {
-                        this._delays.splice(index, 1);
-                        if (typeof item.callbackOff === "function")
-                            item.callbackOff.call(this);
-                    }
-                }
-            }
-        });
+        // `_delays` is a public-facing alias for the TickableQueue's _queue
+        this._delays = this._queue;
     },
+
+    // -- TickableQueue hooks --------------------------------------------------
+
+    _processItem: function(item, frameData) {
+        item.accumulator += frameData.dt * this.delaySpeed;
+        // The while loop handles the (pathological) case where dt > delay
+        while (item.accumulator >= item.delay && item.repeat >= 0) {
+            item.accumulator -= item.delay;
+            item.repeat--;
+            item.callback.call(this);
+        }
+        // Finished when repeat count is exhausted
+        return item.repeat < 0;
+    },
+
+    _onItemFinished: function(item) {
+        if (typeof item.callbackOff === "function") item.callbackOff.call(this);
+    },
+
+    // -- public API -----------------------------------------------------------
+
     /**@
      * #.delay
      * @comp Delay
@@ -157,7 +155,7 @@ module.exports = {
      * ~~~
      */
     pauseDelays: function() {
-        this._delaysPaused = true;
+        this._pauseTick();
     },
     /**@
      * #.resumeDelays
@@ -187,6 +185,6 @@ module.exports = {
      * ~~~
      */
     resumeDelays: function() {
-        this._delaysPaused = false;
+        this._resumeTick();
     }
 };
