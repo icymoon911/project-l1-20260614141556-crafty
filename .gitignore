@@ -1,17 +1,37 @@
-/crafty.js
-build/api/*
-build/api.json
-build/parseNodes.js
-build/parseSourceDocs.js
-build/api-gen.js
-build/webdriver/*
-!build/webdriver/README.md
-!build/webdriver/failed
-build/webdriver/failed/*
-!build/webdriver/failed/README.md
-.*.sw?
-.DS_store
-.project
-.idea
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+*.whl
+
+# Go
+vendor/
+go.sum
+
+# Node / npm
 node_modules/
-localStorage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
