@@ -1,0 +1,10 @@
+{
+  "extends": "../../.jshintrc",
+  "qunit": true,
+  "globals": {
+    "Crafty": false,
+    "browser": false,
+    "signalBarrier": false,
+    "waitBarrier": false
+  }
+}
