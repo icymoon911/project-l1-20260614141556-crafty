@@ -22,10 +22,8 @@ var Crafty = require("../core/core.js");
  * @see .particles
  */
 Crafty.c("Particles", {
-    required: "Renderable",
+    required: "FrameUpdater, Renderable",
     ready: true,
-
-    _particlesPaused: false,
 
     init: function() {
         // We need to clone particle handler object to avoid shared object trap
@@ -36,17 +34,22 @@ Crafty.c("Particles", {
         this._Particles.parentEntity = this;
     },
 
+    /**
+     * tick – called every UpdateFrame by the FrameUpdater component.
+     * Pause / global-pause checks are handled by FrameUpdater's dispatch;
+     * this method contains only business logic.
+     */
+    tick: function() {
+        // don't update if no particle fx active
+        if (!this._Particles.active) return;
+
+        // This updates all particle colors & positions
+        this._Particles.update();
+        // Request redraw from render backend, as appearance has changed
+        this.trigger("Invalidate");
+    },
+
     events: {
-        UpdateFrame: function() {
-            // don't update if paused or no particle fx active
-            if (this._particlesPaused || !this._Particles.active) return;
-
-            // This updates all particle colors & positions
-            this._Particles.update();
-            // Request redraw from render backend, as appearance has changed
-            this.trigger("Invalidate");
-        },
-
         Draw: function(e) {
             // don't render if no particle fx active, but do redraw paused particles
             if (!this._Particles.active) return;
@@ -454,7 +457,7 @@ Crafty.c("Particles", {
      * ~~~
      */
     pauseParticles: function() {
-        this._particlesPaused = true;
+        this.pauseFrameUpdates();
     },
 
     /**@
@@ -480,6 +483,6 @@ Crafty.c("Particles", {
      * ~~~
      */
     resumeParticles: function() {
-        this._particlesPaused = false;
+        this.resumeFrameUpdates();
     }
 });

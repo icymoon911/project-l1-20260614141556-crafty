@@ -20,25 +20,32 @@ module.exports = {
      */
     tweenSpeed: 1,
 
+    required: "FrameUpdater",
+
     init: function() {
         this.tweenGroup = {};
         this.tweenStart = {};
-        this.tweens = [];
-        this.uniqueBind("UpdateFrame", this._tweenTick);
+        // Use the unified update-item queue provided by FrameUpdater.
+        // `tweens` is kept as a public alias for backward compatibility.
+        this.tweens = this._updateItems;
     },
 
-    _tweenTick: function(frameData) {
-        var tween, v, i;
-        for (i = this.tweens.length - 1; i >= 0; i--) {
-            tween = this.tweens[i];
-            tween.easing.tick(frameData.dt * this.tweenSpeed);
-            v = tween.easing.value();
-            this._doTween(tween.props, v);
+    /**
+     * tick – called every UpdateFrame by the FrameUpdater component.
+     * Iterates the managed tween queue, advances each easing, applies the
+     * interpolated values, and removes finished tweens.
+     */
+    tick: function(frameData) {
+        var self = this;
+        this._iterateUpdateItems(function(tween) {
+            tween.easing.tick(frameData.dt * self.tweenSpeed);
+            var v = tween.easing.value();
+            self._doTween(tween.props, v);
             if (tween.easing.complete) {
-                this.tweens.splice(i, 1);
-                this._endTween(tween.props);
+                self._endTween(tween.props);
+                return true; // remove from queue
             }
-        }
+        });
     },
 
     _doTween: function(props, v) {
@@ -136,9 +143,7 @@ module.exports = {
      * Pauses all tweens associated with the entity
      */
     pauseTweens: function() {
-        this.tweens.map(function(e) {
-            e.easing.pause();
-        });
+        this.pauseFrameUpdates();
     },
 
     /**@
@@ -151,9 +156,7 @@ module.exports = {
      * Resumes all paused tweens associated with the entity
      */
     resumeTweens: function() {
-        this.tweens.map(function(e) {
-            e.easing.resume();
-        });
+        this.resumeFrameUpdates();
     },
 
     /*

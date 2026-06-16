@@ -18,35 +18,39 @@ module.exports = {
      */
     delaySpeed: 1,
 
+    required: "FrameUpdater",
+
     init: function() {
-        this._delays = [];
-        this._delaysPaused = false;
-        this.bind("UpdateFrame", function(frameData) {
-            if (this._delaysPaused) return;
-            var index = this._delays.length;
-            while (--index >= 0) {
-                var item = this._delays[index];
-                if (item === false) {
-                    // remove canceled item from array
-                    this._delays.splice(index, 1);
-                } else {
-                    item.accumulator += frameData.dt * this.delaySpeed;
-                    // The while loop handles the (pathological) case where dt>delay
-                    while (item.accumulator >= item.delay && item.repeat >= 0) {
-                        item.accumulator -= item.delay;
-                        item.repeat--;
-                        item.callback.call(this);
-                    }
-                    // remove finished item from array
-                    if (item.repeat < 0) {
-                        this._delays.splice(index, 1);
-                        if (typeof item.callbackOff === "function")
-                            item.callbackOff.call(this);
-                    }
-                }
+        // Use the unified update-item queue provided by FrameUpdater.
+        // `_delays` is kept as a public alias for backward compatibility
+        // (existing code and tests access _delays.length directly).
+        this._delays = this._updateItems;
+    },
+
+    /**
+     * tick – called every UpdateFrame by the FrameUpdater component.
+     * Iterates the managed delay queue, accumulates elapsed time, fires
+     * callbacks, and removes finished or cancelled delays.
+     */
+    tick: function(frameData) {
+        var self = this;
+        this._iterateUpdateItems(function(item) {
+            item.accumulator += frameData.dt * self.delaySpeed;
+            // The while loop handles the (pathological) case where dt>delay
+            while (item.accumulator >= item.delay && item.repeat >= 0) {
+                item.accumulator -= item.delay;
+                item.repeat--;
+                item.callback.call(self);
+            }
+            // remove finished item from array
+            if (item.repeat < 0) {
+                if (typeof item.callbackOff === "function")
+                    item.callbackOff.call(self);
+                return true; // remove from queue
             }
         });
     },
+
     /**@
      * #.delay
      * @comp Delay
@@ -124,13 +128,9 @@ module.exports = {
      * ~~~
      */
     cancelDelay: function(callback) {
-        var index = this._delays.length;
-        while (--index >= 0) {
-            var item = this._delays[index];
-            if (item && item.callback === callback) {
-                this._delays[index] = false;
-            }
-        }
+        this.cancelUpdateItems(function(item) {
+            return item.callback === callback;
+        });
         return this;
     },
     /**@
@@ -157,7 +157,7 @@ module.exports = {
      * ~~~
      */
     pauseDelays: function() {
-        this._delaysPaused = true;
+        this.pauseFrameUpdates();
     },
     /**@
      * #.resumeDelays
@@ -187,6 +187,6 @@ module.exports = {
      * ~~~
      */
     resumeDelays: function() {
-        this._delaysPaused = false;
+        this.resumeFrameUpdates();
     }
 };
