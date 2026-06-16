@@ -163,4 +163,68 @@
 
     _.deepEqual(fox.changed, ["name", "dob"]);
   });
+
+  test("Array values do NOT trigger deep Change events", function(_) {
+    var results = [];
+    Crafty.c("ListHolder", {
+      items: []
+    });
+
+    var ent = Crafty.e("ListHolder, Model");
+
+    ent.bind("Change", function() {
+      results.push("Change");
+    });
+    ent.bind("Change[items]", function() {
+      results.push("Change[items]");
+    });
+    // If arrays incorrectly recurse, Change[items.0] etc. would fire
+    ent.bind("Change[items.0]", function() {
+      results.push("Change[items.0]");
+    });
+
+    ent.attr({ items: [1, 2, 3] });
+
+    _.deepEqual(
+      results,
+      ["Change[items]", "Change"],
+      "Only Change[items] and Change should fire, not deep array index events"
+    );
+  });
+
+  test("Plain object values DO trigger deep Change events", function(_) {
+    var results = [];
+    Crafty.c("ContactHolder", {
+      contact: { email: "a@b.com" }
+    });
+
+    var ent = Crafty.e("ContactHolder, Model");
+
+    ent.bind("Change[contact.email]", function() {
+      results.push("Change[contact.email]");
+    });
+
+    ent.attr({ contact: { email: "new@example.com" } }, false, true);
+
+    _.ok(
+      results.indexOf("Change[contact.email]") > -1,
+      "Change[contact.email] should fire for plain object deep change"
+    );
+  });
+
+  test("null values do not cause errors in _changed_triggers", function(_) {
+    _.expect(1);
+    Crafty.c("Nullable", {
+      data: null
+    });
+
+    var ent = Crafty.e("Nullable, Model");
+    // This should NOT throw when data[key] is null
+    try {
+      ent.attr({ data: null });
+      _.ok(true, "Setting null value does not throw");
+    } catch (e) {
+      _.ok(false, "Setting null value threw an error: " + e.message);
+    }
+  });
 })();

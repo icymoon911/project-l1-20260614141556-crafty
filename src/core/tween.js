@@ -123,6 +123,18 @@ module.exports = {
             for (var propname in target) this.cancelTween(propname);
         }
 
+        // Remove tween objects from the tweens array if all their properties have been cancelled
+        for (var i = this.tweens.length - 1; i >= 0; i--) {
+            var hasProps = false;
+            for (var p in this.tweens[i].props) {
+                hasProps = true;
+                break;
+            }
+            if (!hasProps) {
+                this.tweens.splice(i, 1);
+            }
+        }
+
         return this;
     },
 
@@ -165,6 +177,8 @@ module.exports = {
             notEmpty = true;
             delete this.tweenGroup[propname];
         }
+        // Only fire TweenEnd if there are properties remaining.
+        // A fully cancelled tween should not trigger this event.
         if (notEmpty) this.trigger("TweenEnd", properties);
     }
 };

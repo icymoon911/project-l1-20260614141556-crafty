@@ -253,4 +253,63 @@
     Crafty.timer.simulateFrames(10 + 2);
     _.notOk(fired, "TweenEnd shouldn't have fired.");
   });
+
+  test("cancelTween removes fully-cancelled tween from tweens array", function(_) {
+    var e = Crafty.e("2D, Tween").tween({ x: 100, y: 100 }, 200);
+
+    _.strictEqual(e.tweens.length, 1, "one tween in array before cancel");
+
+    e.cancelTween("x");
+    _.strictEqual(
+      e.tweens.length,
+      1,
+      "tween still in array when only one prop cancelled"
+    );
+
+    e.cancelTween("y");
+    _.strictEqual(
+      e.tweens.length,
+      0,
+      "tween removed from array when all props cancelled"
+    );
+  });
+
+  test("cancelTween on partially cancelled tween keeps it in tweens array", function(_) {
+    var e = Crafty.e("2D, Tween").tween({ x: 100, y: 100, z: 100 }, 200);
+
+    _.strictEqual(e.tweens.length, 1, "one tween in array before cancel");
+
+    e.cancelTween("x");
+    _.strictEqual(
+      e.tweens.length,
+      1,
+      "tween remains in array when some props still active"
+    );
+
+    // The cancelled prop should be removed from tween.props
+    _.strictEqual(
+      e.tweens[0].props.hasOwnProperty("x"),
+      false,
+      "cancelled prop 'x' removed from tween props"
+    );
+    _.strictEqual(
+      e.tweens[0].props.hasOwnProperty("y"),
+      true,
+      "active prop 'y' still in tween props"
+    );
+  });
+
+  test("_endTween does not fire TweenEnd when properties is empty", function(_) {
+    _.expect(1);
+    var fired = false;
+
+    var e = Crafty.e("2D, Tween");
+    // Manually call _endTween with an empty properties object
+    e.bind("TweenEnd", function() {
+      fired = true;
+    });
+    e._endTween({});
+
+    _.notOk(fired, "TweenEnd should not fire when properties is empty");
+  });
 })();

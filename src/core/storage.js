@@ -1,11 +1,12 @@
 var Crafty = require("../core/core.js");
 
+var storage;
 try {
-    var storage =
+    storage =
         (typeof window !== "undefined" && window.localStorage) ||
         new require("node-localstorage").LocalStorage("./localStorage");
 } catch (e) {
-    var storage = null;
+    storage = null;
 }
 
 /**@

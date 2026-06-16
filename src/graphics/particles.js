@@ -28,9 +28,33 @@ Crafty.c("Particles", {
     _particlesPaused: false,
 
     init: function() {
-        // We need to clone particle handler object to avoid shared object trap
-        this._Particles = Crafty.clone(this._Particles);
-        // Add default options
+        // Deep clone the _Particles object to avoid shared references between instances.
+        // JSON-based deep clone ensures nested objects like gravity and originOffset
+        // are independent per instance, while functions are re-attached below.
+        var src = this._Particles;
+        this._Particles = JSON.parse(
+            JSON.stringify({
+                presets: src.presets,
+                emissionRate: src.emissionRate,
+                elapsedFrames: src.elapsedFrames,
+                emitCounter: src.emitCounter,
+                active: src.active,
+                particles: src.particles
+            })
+        );
+
+        // Re-attach prototype methods (functions are not JSON-serializable)
+        this._Particles.init = src.init;
+        this._Particles.config = src.config;
+        this._Particles.start = src.start;
+        this._Particles.stop = src.stop;
+        this._Particles.initParticle = src.initParticle;
+        this._Particles.update = src.update;
+        this._Particles.render = src.render;
+        this._Particles.Particle = src.Particle;
+        this._Particles.RANDM1TO1 = src.RANDM1TO1;
+
+        // Initialize with cloned presets
         this._Particles.init();
 
         this._Particles.parentEntity = this;

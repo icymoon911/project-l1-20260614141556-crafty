@@ -64,4 +64,31 @@
       "Uninit scene called successfully when chanced to another scene"
     );
   });
+
+  test("enterScene throws on non-existent scene BEFORE destroying current scene", function(_) {
+    _.expect(2);
+
+    // Set up an initial valid scene
+    Crafty.defineScene("valid-scene", function() {});
+    Crafty.enterScene("valid-scene");
+
+    // Create a 2D entity that should survive if enterScene fails early
+    Crafty.e("2D");
+    var countBefore = Crafty("2D").length;
+
+    // Attempting to enter a non-existent scene should throw BEFORE destroying 2D entities
+    try {
+      Crafty.enterScene("non-existent-scene");
+      _.ok(false, "enterScene should have thrown for non-existent scene");
+    } catch (e) {
+      _.ok(true, "enterScene threw for non-existent scene: " + e);
+    }
+
+    // Verify 2D entities were NOT destroyed (the scene switch was aborted)
+    _.strictEqual(
+      Crafty("2D").length,
+      countBefore,
+      "2D entities were not destroyed because the target scene did not exist"
+    );
+  });
 })();
